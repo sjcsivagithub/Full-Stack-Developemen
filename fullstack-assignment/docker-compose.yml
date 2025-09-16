@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - appnet
+
+  backend:
+    build: ./backend
+    container_name: backend
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/taskmanager
+      - JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiMTIzNDU2Nzg5MGFiY2RlZiJ9LCJpYXQiOjE3MjY0ODQ4NzAsImV4cCI6MTcyNjQ4ODQ3MH0.fYFxA6vG1XH1mZxR9uR2AvAZZTXU7F3M3YrFFtlHgI0
+    depends_on:
+      - mongo
+    ports:
+      - "5000:5000"
+    networks:
+      - appnet
+
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - appnet
+
+volumes:
+  mongo_data:
+
+networks:
+  appnet:
+    driver: bridge

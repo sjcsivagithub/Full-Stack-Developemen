@@ -1,0 +1,28 @@
+require('dotenv').config();
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/auth');
+const projectRoutes = require('./routes/projects');
+const tasksRoutes = require('./routes/tasks');
+const setupSwagger = require('./swagger');
+const PORT = process.env.PORT || 5000;
+const app = express();
+app.use(cors());
+app.use(express.json());
+connectDB(process.env.MONGO_URI || 'mongodb://localhost:27017/taskmanager');
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/projects/:projectId/tasks', tasksRoutes);
+setupSwagger(app);
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(server, { cors: { origin: '*' } });
+app.set('io', io);
+io.on('connection', (socket) => {
+  socket.on('joinProject', (projectId) => { socket.join(projectId); });
+  socket.on('leaveProject', (projectId) => { socket.leave(projectId); });
+});
+server.listen(PORT, () => console.log(`Server started on port ${PORT}`));
